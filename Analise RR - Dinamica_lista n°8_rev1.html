@@ -1,0 +1,417 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width, initial-scale=1">
+<title>Análise de R&amp;R — Dinâmica em Trios</title>
+<style>
+:root{--navy:#0B2545;--teal:#1C7293;--mint:#4FD1C5;--amber:#FFB100;--ink:#10243E;--bg:#F4F7FA;--muted:#5B6B7C;--line:#DCE6EF;--line2:#B9C6D3;--ok:#1E8E5A;--warn:#C77700;--bad:#C0392B;}
+*{box-sizing:border-box}
+body{margin:0;background:var(--bg);color:var(--ink);font-family:'Segoe UI',Calibri,Arial,sans-serif;font-size:15px}
+header{background:var(--navy);color:#fff;padding:14px 24px;display:flex;align-items:center;gap:16px;flex-wrap:wrap}
+header .k{color:var(--mint);font-weight:700;font-size:12px;letter-spacing:.06em}
+header h1{margin:2px 0 0;font-size:21px;font-family:Arial,sans-serif}
+header .sp{flex:1}
+nav{display:flex;gap:6px;background:#13315C;padding:0 24px;flex-wrap:wrap}
+nav button{background:none;border:0;color:#AFC3D6;padding:12px 16px;font:600 14px 'Segoe UI',Calibri,Arial,sans-serif;cursor:pointer;border-bottom:3px solid transparent}
+nav button.on{color:#fff;border-bottom-color:var(--amber)}
+nav button:disabled{opacity:.4;cursor:not-allowed}
+main{max-width:1280px;margin:0 auto;padding:20px 24px 40px}
+section{display:none}section.on{display:block}
+.card{background:#fff;border:1px solid var(--line2);padding:16px 18px;margin-bottom:16px}
+.card h2{margin:0 0 10px;font-size:16px;font-family:Arial,sans-serif;color:var(--navy)}
+.card h3{margin:0 0 6px;font-size:14px;color:var(--teal)}
+.row{display:flex;gap:16px;flex-wrap:wrap;align-items:flex-end}
+.field{display:flex;flex-direction:column;gap:4px}
+.field label{font-size:12px;font-weight:700;color:var(--muted);text-transform:uppercase;letter-spacing:.03em}
+input[type=text],select{border:1px solid var(--line2);padding:7px 9px;font:inherit;background:#fff;min-width:0}
+input[type=text]:focus,select:focus{outline:2px solid var(--teal);outline-offset:0}
+.btn{background:var(--teal);color:#fff;border:0;padding:10px 18px;font:700 14px 'Segoe UI',Calibri,Arial,sans-serif;cursor:pointer}
+.btn:hover{background:#17607b}.btn.sec{background:#fff;color:var(--teal);border:1px solid var(--teal)}
+.btn:disabled{background:#9db3bf;cursor:not-allowed}
+.btn.amber{background:var(--amber);color:var(--ink)}
+.note{color:var(--muted);font-size:13px}
+table.grid{border-collapse:collapse;width:100%;font-size:14px}
+table.grid th,table.grid td{border:1px solid var(--line2);padding:3px 4px;text-align:center}
+table.grid th{background:var(--navy);color:#fff;font-weight:600;padding:6px}
+table.grid th.o1{background:#1C7293}table.grid th.o2{background:#A93226}table.grid th.o3{background:#1E8E5A}
+table.grid td.pc{background:#EAF0F6;font-weight:700;width:46px}
+table.grid input{width:100%;min-width:62px;border:1px solid transparent;text-align:center;padding:5px 2px;font:inherit;background:#fff}
+table.grid input:focus{border-color:var(--teal);outline:none;background:#EAF7FB}
+table.grid input.bad{background:#FDECEA;border-color:var(--bad)}
+table.grid input.warn{background:#FFF4DC;border-color:var(--amber)}
+.sums{display:flex;gap:12px;flex-wrap:wrap;margin-top:12px}
+.sum{flex:1;min-width:200px;border:1px solid var(--line2);padding:8px 12px;background:#F8FBFD}
+.sum b{display:block;font-size:12px;color:var(--muted);text-transform:uppercase}
+.sum span{font-size:20px;font-weight:700;font-family:Consolas,monospace}
+.prog{height:8px;background:var(--line);margin:10px 0}.prog div{height:100%;background:var(--teal);width:0}
+.kpis{display:grid;grid-template-columns:repeat(auto-fit,minmax(220px,1fr));gap:12px;margin-bottom:16px}
+.kpi{background:#fff;border:1px solid var(--line2);border-left:6px solid var(--teal);padding:12px 14px}
+.kpi small{color:var(--muted);font-weight:700;text-transform:uppercase;font-size:11px;letter-spacing:.03em}
+.kpi .v{font-size:28px;font-weight:700;font-family:Arial,sans-serif}
+.kpi .b{display:inline-block;font-size:12px;font-weight:700;padding:2px 8px;color:#fff;margin-top:4px}
+.kpi.ok{border-left-color:var(--ok)}.kpi.ok .b{background:var(--ok)}
+.kpi.warn{border-left-color:var(--warn)}.kpi.warn .b{background:var(--warn)}
+.kpi.bad{border-left-color:var(--bad)}.kpi.bad .b{background:var(--bad)}
+table.res{border-collapse:collapse;width:100%;font-size:14px}
+table.res th{background:var(--navy);color:#fff;padding:7px 9px;text-align:right;font-weight:600}
+table.res th:first-child,table.res td:first-child{text-align:left}
+table.res td{border-bottom:1px solid var(--line);padding:6px 9px;text-align:right;font-family:Consolas,'Courier New',monospace}
+table.res td:first-child{font-family:'Segoe UI',Calibri,Arial,sans-serif;font-weight:600}
+table.res tr.tot td{border-top:2px solid var(--navy);font-weight:700}
+table.res tr.hi td{background:#EAF7FB}
+.charts{display:grid;grid-template-columns:repeat(auto-fit,minmax(520px,1fr));gap:16px}
+.chart{background:#fff;border:1px solid var(--line2);padding:10px 12px}
+.chart h3{margin:0 0 2px}
+.chart .cap{font-size:12.5px;color:var(--muted);margin-top:4px}
+.chart svg{width:100%;height:auto;display:block}
+.two{display:grid;grid-template-columns:1fr 1fr;gap:16px}
+@media(max-width:900px){.two{grid-template-columns:1fr}.charts{grid-template-columns:1fr}}
+footer{text-align:center;color:var(--muted);font-size:12.5px;padding:10px 0 24px}
+footer a{color:var(--teal);cursor:pointer;text-decoration:underline}
+.modal{position:fixed;inset:0;background:rgba(11,37,69,.55);display:none;align-items:center;justify-content:center;z-index:9}
+.modal.on{display:flex}.modal .box{background:#fff;padding:20px 22px;min-width:320px;border-top:5px solid var(--amber)}
+.legend{display:flex;gap:14px;flex-wrap:wrap;font-size:12.5px;margin-top:4px}
+.legend i{display:inline-block;width:12px;height:12px;margin-right:5px;vertical-align:-1px}
+@media print{header .btnbar,nav,footer,.noprint,#sec-dados{display:none!important}main{padding:0}section{display:block!important}#sec-dados{display:none!important}.card,.chart,.kpi{break-inside:avoid}.charts{grid-template-columns:1fr 1fr}}
+</style>
+</head>
+<body>
+<header>
+  <div><div class="k">METROLOGIA · MSA</div><h1>Estudo de R&amp;R — análise do sistema de medição</h1></div>
+  <div class="sp"></div>
+  <div class="note" style="color:#AFC3D6">Dinâmica em trios · 10 peças × 3 operadores × 3 repetições</div>
+</header>
+<nav>
+  <button data-t="dados" class="on">1 · Dados</button>
+  <button data-t="res" disabled>2 · Resultados</button>
+  <button data-t="graf" disabled>3 · Gráficos</button>
+  <button data-t="met" disabled>4 · Método média e amplitude</button>
+</nav>
+<main>
+<section id="sec-dados" class="on">
+  <div class="card">
+    <h2>Identificação e dados da folha</h2>
+    <div class="row">
+      <div class="field"><label>Trio nº</label><input id="trio" type="text" size="4"></div>
+      <div class="field"><label>Integrantes</label><input id="nomes" type="text" size="40"></div>
+      <div class="field"><label>Tolerância da peça (mm)</label><input id="tol" type="text" size="8" value="0,052"></div>
+      <div class="field"><label>Resolução do instrumento (mm)</label><input id="resol" type="text" size="8" value="0,001"></div>
+      <div class="field"><label>Multiplicador da variação</label>
+        <select id="mult"><option value="5.15">5,15 σ (99%)</option><option value="6">6 σ (99,73%)</option></select></div>
+    </div>
+    <p class="note" style="margin:10px 0 0">Digite as 90 medições <b>exatamente como estão na folha</b> (mm). Use vírgula ou ponto. <b>Tab</b> ou <b>Enter</b> passam para o próximo campo. Os totais por operador, abaixo da tabela, devem coincidir com os da folha: se não coincidirem, há erro de digitação.</p>
+  </div>
+  <div class="card">
+    <h2>Medições (mm)</h2>
+    <div style="overflow-x:auto"><table class="grid" id="grid"></table></div>
+    <div class="prog"><div id="prog"></div></div>
+    <div class="row noprint"><span id="count" class="note">0 de 90 valores</span><div class="sp" style="flex:1"></div>
+      <button class="btn sec" id="limpar">Limpar tudo</button>
+      <button class="btn" id="analisar" disabled>Analisar dados →</button></div>
+    <div class="sums" id="sums"></div>
+    <p class="note" id="msgdados" style="margin-top:10px"></p>
+  </div>
+</section>
+
+<section id="sec-res">
+  <div class="kpis" id="kpis"></div>
+  <div class="two" style="grid-template-columns:1fr">
+    <!-- Tabela ANOVA oculta (para reexibir: remova display:none abaixo e o style do div "two") -->
+    <div class="card" style="display:none"><h2>Tabela ANOVA (dois fatores com interação)</h2><div style="overflow-x:auto"><table class="res" id="tanova"></table></div>
+      <p class="note" id="pnote" style="margin-top:8px"></p></div>
+    <div class="card"><h2>Verificações do instrumento</h2><div id="verif"></div></div>
+  </div>
+  <div class="card"><h2>Componentes da variação</h2><div style="overflow-x:auto"><table class="res" id="tcomp"></table></div>
+    <p class="note" style="margin-top:8px">%Contribuição usa variâncias (soma 100%). %Variação do estudo e %Tolerância usam desvios padrão (não somam 100%). Valores em µm.</p><p class="note" style="margin-top:4px"><b>Siglas:</b> VE = variação do equipamento (repetitividade); VA = variação dos avaliadores/operadores (reprodutibilidade); VAP = interação avaliador × peça; VP = variação das peças; VT = variação total; R&amp;R = repetitividade e reprodutibilidade (VE e VA, mais VAP na ANOVA).</p></div>
+  <div class="card noprint"><button class="btn sec" onclick="window.print()">Imprimir / salvar relatório em PDF</button></div>
+</section>
+
+<section id="sec-graf"><div class="charts" id="charts"></div></section>
+
+<section id="sec-met">
+  <div class="card"><h2>Método da média e amplitude (AIAG 3ª ed.)</h2>
+    <p class="note">Constantes para 10 peças, 3 operadores e 3 repetições. Este método <b>não estima a interação</b> peça × operador; compare com a ANOVA.</p>
+    <div style="overflow-x:auto"><table class="res" id="tmet"></table></div><p class="note" style="margin-top:8px"><b>Siglas:</b> VE = variação do equipamento (repetitividade); VA = variação dos avaliadores/operadores (reprodutibilidade); VAP = interação avaliador × peça; VP = variação das peças; VT = variação total; R&amp;R = √(VE² + VA²). Este método não estima a VAP.</p></div>
+</section>
+</main>
+<footer>Desenvolvido por: Prof. Eng. Luiz Felipe Bastos · Fabricação Mecânica e Metrologia · <a id="profl">modo professor</a></footer>
+
+<div class="modal" id="modal"><div class="box">
+  <h2 style="margin:0 0 10px;font-size:16px">Modo professor</h2>
+  <div id="m1"><div class="field"><label>Senha</label><input id="pin" type="text" autocomplete="off"></div>
+  <p class="note" id="pinerr" style="color:var(--bad)"></p>
+  <div class="row"><button class="btn" id="pinok">Entrar</button><button class="btn sec" id="pinx">Cancelar</button></div></div>
+  <div id="m2" style="display:none"><div class="field"><label>Carregar dados do trio</label><select id="selt"></select></div>
+  <div class="row" style="margin-top:12px"><button class="btn" id="loadt">Carregar</button><button class="btn sec" id="loadx">Fechar</button></div></div>
+</div></div>
+
+<script>
+const DATA={"1":{"res":0.001,"X":[[[-38,-39,-39],[-38,-38,-36],[-39,-39,-38]],[[-16,-16,-17],[-16,-18,-17],[-18,-17,-16]],[[-10,-10,-9],[-10,-9,-11],[-10,-10,-10]],[[-25,-25,-26],[-25,-24,-24],[-23,-24,-23]],[[-21,-21,-21],[-20,-21,-21],[-20,-21,-20]],[[-27,-27,-28],[-27,-27,-27],[-28,-27,-30]],[[-35,-33,-35],[-35,-33,-35],[-36,-35,-35]],[[-42,-43,-42],[-42,-41,-42],[-42,-42,-42]],[[-31,-31,-31],[-32,-31,-30],[-31,-31,-32]],[[-14,-13,-12],[-14,-12,-14],[-14,-13,-14]]]},"2":{"res":0.001,"X":[[[-14,-15,-16],[-16,-15,-14],[-14,-15,-13]],[[-33,-33,-34],[-35,-34,-33],[-34,-34,-34]],[[-40,-40,-39],[-42,-41,-40],[-41,-40,-40]],[[-37,-38,-37],[-37,-38,-38],[-37,-38,-38]],[[-31,-32,-30],[-31,-31,-30],[-30,-31,-31]],[[-17,-17,-17],[-18,-18,-19],[-18,-18,-19]],[[-10,-12,-10],[-12,-11,-11],[-12,-12,-12]],[[-27,-27,-27],[-29,-27,-27],[-28,-27,-28]],[[-25,-23,-24],[-25,-25,-26],[-26,-24,-24]],[[-21,-21,-21],[-21,-22,-22],[-22,-21,-21]]]},"3":{"res":0.001,"X":[[[-12,-11,-10],[-10,-10,-10],[-4,-4,-6]],[[-19,-22,-22],[-20,-19,-21],[-13,-15,-14]],[[-41,-43,-41],[-43,-42,-41],[-36,-35,-35]],[[-25,-24,-25],[-24,-24,-25],[-19,-18,-18]],[[-13,-13,-15],[-13,-13,-14],[-7,-8,-7]],[[-29,-27,-28],[-29,-27,-28],[-22,-23,-24]],[[-33,-32,-32],[-32,-31,-34],[-24,-25,-27]],[[-40,-40,-38],[-39,-39,-37],[-33,-34,-32]],[[-33,-34,-35],[-37,-34,-35],[-29,-30,-30]],[[-16,-17,-17],[-18,-17,-16],[-12,-13,-13]]]},"4":{"res":0.001,"X":[[[-39,-39,-37],[-38,-36,-39],[-38,-41,-39]],[[-23,-22,-24],[-23,-25,-25],[-27,-21,-19]],[[-41,-42,-41],[-43,-41,-42],[-41,-41,-44]],[[-11,-9,-9],[-10,-9,-8],[-9,-14,-3]],[[-31,-32,-32],[-30,-31,-31],[-32,-30,-39]],[[-18,-17,-16],[-17,-16,-16],[-16,-18,-16]],[[-34,-36,-35],[-37,-35,-34],[-31,-35,-35]],[[-13,-14,-14],[-12,-11,-13],[-14,-17,-20]],[[-19,-21,-20],[-21,-20,-19],[-20,-21,-27]],[[-28,-29,-28],[-27,-27,-27],[-28,-26,-26]]]},"5":{"res":0.001,"X":[[[-22,-35,-21],[-21,-29,-17],[-24,-23,-21]],[[-37,-32,-37],[-29,-31,-30],[-24,-30,-26]],[[-17,-12,-8],[-11,-11,-22],[-13,-14,-17]],[[-37,-36,-38],[-38,-34,-39],[-44,-39,-41]],[[-13,-18,-15],[-13,-10,-8],[1,-10,-11]],[[-28,-24,-24],[-26,-25,-25],[-29,-26,-33]],[[-50,-43,-40],[-45,-40,-46],[-30,-43,-37]],[[-29,-37,-38],[-36,-37,-28],[-38,-44,-37]],[[-26,-21,-19],[-25,-20,-11],[-25,-20,-23]],[[-21,-19,-21],[-17,-10,-11],[-14,-19,-18]]]},"6":{"res":0.001,"X":[[[-40,-38,-45],[-37,-47,-45],[-42,-43,-39]],[[-29,-31,-29],[-32,-36,-33],[-33,-30,-32]],[[-39,-36,-36],[-35,-35,-33],[-36,-38,-32]],[[-40,-37,-40],[-41,-44,-37],[-40,-42,-38]],[[-6,-4,-9],[-18,-6,-11],[-14,-13,-10]],[[-24,-22,-32],[-27,-24,-27],[-22,-24,-29]],[[-24,-24,-17],[-18,-17,-22],[-23,-23,-24]],[[-12,-14,-15],[-13,-19,-16],[-11,-15,-16]],[[-28,-32,-27],[-21,-21,-26],[-31,-30,-30]],[[-26,-21,-18],[-17,-20,-16],[-14,-14,-23]]]},"7":{"res":0.02,"X":[[[-20,-20,-20],[-20,-20,-20],[-20,-20,-20]],[[-20,-20,-20],[-20,-20,-20],[-20,-20,-20]],[[-40,-20,-20],[-20,-20,-20],[-40,-20,-20]],[[-20,-20,-20],[-20,-20,-20],[-20,-20,-20]],[[-20,-20,-20],[-20,-20,-20],[-20,-20,-20]],[[-20,-20,-20],[-20,-20,-20],[-20,-20,-20]],[[-20,-40,-40],[-20,-20,-20],[-20,-20,-20]],[[-20,-20,-20],[-20,-20,-20],[-20,-20,-20]],[[-40,-40,-40],[-40,-40,-40],[-40,-40,-40]],[[-40,-40,-40],[-40,-40,-40],[-40,-40,-40]]]},"8":{"res":0.001,"X":[[[-35,-35,-36],[-35,-36,-35],[-34,-35,-35]],[[-10,-10,-10],[-9,-10,-11],[-22,-20,-21]],[[-26,-26,-25],[-23,-24,-23],[-24,-24,-24]],[[-30,-31,-32],[-32,-31,-31],[-31,-31,-33]],[[-20,-19,-20],[-20,-20,-20],[-32,-32,-33]],[[-43,-42,-43],[-41,-41,-43],[-42,-42,-42]],[[-13,-14,-14],[-13,-15,-14],[-14,-13,-15]],[[-39,-38,-39],[-38,-40,-39],[-51,-50,-50]],[[-18,-18,-17],[-18,-17,-18],[-17,-18,-17]],[[-28,-27,-27],[-29,-27,-28],[-27,-28,-25]]]},"9":{"res":0.001,"X":[[[-32,-30,-31],[-30,-32,-30],[-31,-31,-31]],[[-24,-23,-24],[-23,-23,-23],[-24,-25,-24]],[[-26,-24,-25],[-25,-25,-25],[-25,-25,-24]],[[-28,-26,-28],[-26,-27,-27],[-28,-29,-27]],[[-30,-30,-29],[-30,-30,-30],[-30,-29,-30]],[[-27,-27,-27],[-28,-26,-27],[-25,-27,-26]],[[-21,-22,-22],[-24,-23,-22],[-22,-22,-23]],[[-29,-28,-30],[-30,-28,-30],[-28,-30,-29]],[[-25,-27,-24],[-25,-25,-25],[-25,-25,-27]],[[-20,-22,-22],[-21,-21,-21],[-21,-19,-22]]]}};
+const PIN='msa2026';
+const I=10,J=3,K=3;
+const $=s=>document.querySelector(s);
+const fmt=(v,d=2)=>Number.isFinite(v)?v.toLocaleString('pt-BR',{minimumFractionDigits:d,maximumFractionDigits:d}):'—';
+const OPC=['#1C7293','#C0392B','#1E8E5A'];
+
+/* ---------- grade de entrada ---------- */
+function buildGrid(){
+  let h='<tr><th rowspan="2">Peça</th>';
+  for(let j=0;j<J;j++) h+=`<th colspan="3" class="o${j+1}">Operador ${j+1}</th>`;
+  h+='</tr><tr>';
+  for(let j=0;j<J;j++) for(let k=0;k<K;k++) h+=`<th class="o${j+1}">${k+1}ª</th>`;
+  h+='</tr>';
+  for(let i=0;i<I;i++){
+    h+=`<tr><td class="pc">${i+1}</td>`;
+    for(let j=0;j<J;j++) for(let k=0;k<K;k++) h+=`<td><input type="text" inputmode="decimal" autocomplete="off" data-i="${i}" data-j="${j}" data-k="${k}" aria-label="Peça ${i+1}, operador ${j+1}, medição ${k+1}"></td>`;
+    h+='</tr>';
+  }
+  $('#grid').innerHTML=h;
+}
+const inputs=()=>[...document.querySelectorAll('#grid input')];
+function parse(s){ if(s==null) return NaN; s=String(s).trim().replace(',','.'); if(!/^-?\d+(\.\d+)?$/.test(s)) return NaN; return parseFloat(s); }
+function readX(){ // X[i][j][k] em mm (NaN se vazio/inválido)
+  const X=Array.from({length:I},()=>Array.from({length:J},()=>Array(K).fill(NaN)));
+  inputs().forEach(e=>{X[+e.dataset.i][+e.dataset.j][+e.dataset.k]=parse(e.value)});
+  return X;
+}
+function median(a){const b=[...a].sort((x,y)=>x-y);const n=b.length;return n?(n%2?b[(n-1)/2]:(b[n/2-1]+b[n/2])/2):NaN}
+function refresh(){
+  const els=inputs(); const vals=els.map(e=>parse(e.value));
+  const good=vals.filter(Number.isFinite); const med=median(good);
+  let nfill=0,nbad=0;
+  els.forEach((e,ix)=>{
+    const raw=e.value.trim(); e.classList.remove('bad','warn');
+    if(raw==='') return; nfill++;
+    if(!Number.isFinite(vals[ix])){e.classList.add('bad');nbad++;}
+    else if(good.length>=6 && Math.abs(vals[ix]-med)>0.5){e.classList.add('warn');e.title='Valor muito diferente dos demais: confira com a folha';}
+    else e.title='';
+  });
+  const ok=good.length;
+  $('#count').textContent=`${ok} de 90 valores válidos`+(nbad?` · ${nbad} inválido(s)`:'');
+  $('#prog').style.width=(ok/90*100)+'%';
+  $('#analisar').disabled=!(ok===90&&nbad===0);
+  // somas de conferência
+  const dec=Math.max(0,...els.map(e=>{const m=e.value.trim().replace(',','.').split('.');return m[1]?m[1].length:0}));
+  let h='';
+  for(let j=0;j<J;j++){
+    const v=[];els.forEach((e,ix)=>{if(+e.dataset.j===j&&Number.isFinite(vals[ix]))v.push(vals[ix])});
+    const s=v.reduce((a,b)=>a+b,0);
+    h+=`<div class="sum"><b>Soma · Operador ${j+1} (${v.length}/30)</b><span>${v.length?fmt(s,Math.max(dec,2)):'—'}</span></div>`;
+  }
+  const tot=good.reduce((a,b)=>a+b,0);
+  h+=`<div class="sum"><b>Soma geral (${ok}/90)</b><span>${ok?fmt(tot,Math.max(dec,2)):'—'}</span></div>`;
+  $('#sums').innerHTML=h;
+  $('#msgdados').textContent=ok===90?'Compare as quatro somas com a folha antes de analisar.':'';
+  save();
+}
+function save(){try{localStorage.setItem('rr_trio_v1',JSON.stringify({t:$('#trio').value,n:$('#nomes').value,tol:$('#tol').value,res:$('#resol').value,m:$('#mult').value,v:inputs().map(e=>e.value)}))}catch(_){}}
+function restore(){try{const d=JSON.parse(localStorage.getItem('rr_trio_v1')||'null');if(!d)return;$('#trio').value=d.t||'';$('#nomes').value=d.n||'';$('#tol').value=d.tol||'0,052';$('#resol').value=d.res||'0,001';$('#mult').value=d.m||'5.15';const e=inputs();(d.v||[]).forEach((x,i)=>{if(e[i])e[i].value=x})}catch(_){}}
+
+/* ---------- estatística ---------- */
+function lgam(x){const c=[76.18009172947146,-86.50532032941677,24.01409824083091,-1.231739572450155,0.1208650973866179e-2,-0.5395239384953e-5];let y=x,t=x+5.5;t-=(x+.5)*Math.log(t);let s=1.000000000190015;for(const q of c){y+=1;s+=q/y}return -t+Math.log(2.5066282746310005*s/x)}
+function betacf(a,b,x){const M=300,E=3e-12,F=1e-300;let qab=a+b,qap=a+1,qam=a-1,c=1,d=1-qab*x/qap;if(Math.abs(d)<F)d=F;d=1/d;let h=d;for(let m=1;m<=M;m++){const m2=2*m;let aa=m*(b-m)*x/((qam+m2)*(a+m2));d=1+aa*d;if(Math.abs(d)<F)d=F;c=1+aa/c;if(Math.abs(c)<F)c=F;d=1/d;h*=d*c;aa=-(a+m)*(qab+m)*x/((a+m2)*(qap+m2));d=1+aa*d;if(Math.abs(d)<F)d=F;c=1+aa/c;if(Math.abs(c)<F)c=F;d=1/d;const del=d*c;h*=del;if(Math.abs(del-1)<E)break}return h}
+function ibeta(x,a,b){if(x<=0)return 0;if(x>=1)return 1;const bt=Math.exp(lgam(a+b)-lgam(a)-lgam(b)+a*Math.log(x)+b*Math.log(1-x));return x<(a+1)/(a+b+2)?bt*betacf(a,b,x)/a:1-bt*betacf(b,a,1-x)/b}
+function pF(F,d1,d2){if(!(F>0))return 1;return ibeta(d2/(d2+d1*F),d2/2,d1/2)}
+
+function analyze(Xmm,tolMm,mult){
+  const X=Xmm.map(a=>a.map(b=>b.map(v=>v*1000))); // µm
+  const TOL=tolMm*1000;
+  let g=0;const mp=Array(I).fill(0),mo=Array(J).fill(0),mc=X.map(a=>a.map(b=>b.reduce((x,y)=>x+y,0)/K));
+  for(let i=0;i<I;i++)for(let j=0;j<J;j++)for(let k=0;k<K;k++){g+=X[i][j][k];mp[i]+=X[i][j][k];mo[j]+=X[i][j][k]}
+  const N=I*J*K;g/=N;for(let i=0;i<I;i++)mp[i]/=(J*K);for(let j=0;j<J;j++)mo[j]/=(I*K);
+  let SSP=0,SSO=0,SSPO=0,SSE=0;
+  for(let i=0;i<I;i++)SSP+=J*K*(mp[i]-g)**2;
+  for(let j=0;j<J;j++)SSO+=I*K*(mo[j]-g)**2;
+  for(let i=0;i<I;i++)for(let j=0;j<J;j++){SSPO+=K*(mc[i][j]-mp[i]-mo[j]+g)**2;for(let k=0;k<K;k++)SSE+=(X[i][j][k]-mc[i][j])**2}
+  const dfP=I-1,dfO=J-1,dfPO=(I-1)*(J-1),dfE=I*J*(K-1),dfT=N-1;
+  const MQP=SSP/dfP,MQA=SSO/dfO,MQAP=SSPO/dfPO,MQR=SSE/dfE;
+  const FP=MQP/MQAP,FO=MQA/MQAP,FPO=MQAP/MQR;
+  const pP=pF(FP,dfP,dfPO),pO=pF(FO,dfO,dfPO),pPO=pF(FPO,dfPO,dfE);
+  const tau=MQR,om=Math.max(0,(MQA-MQAP)/(I*K)),ga=Math.max(0,(MQAP-MQR)/K),sg=Math.max(0,(MQP-MQAP)/(J*K));
+  const RR2=tau+om+ga,VT2=RR2+sg;
+  const comp=(v)=>({v,sd:Math.sqrt(v),cont:100*v/VT2,pvar:100*Math.sqrt(v/VT2),ptol:100*mult*Math.sqrt(v)/TOL,var:mult*Math.sqrt(v)});
+  const C={rr:comp(RR2),ve:comp(tau),va:comp(om),vap:comp(ga),vp:comp(sg),vt:comp(VT2)};
+  const ndc=RR2>0?Math.floor(1.41*Math.sqrt(sg)/Math.sqrt(RR2)):Infinity;
+  // cartas
+  const R=X.map(a=>a.map(b=>Math.max(...b)-Math.min(...b)));          // R[i][j]
+  const Rall=[].concat(...R);const Rbar=Rall.reduce((a,b)=>a+b,0)/Rall.length;
+  const Rop=[0,1,2].map(j=>R.reduce((s,r)=>s+r[j],0)/I);
+  const D4=2.574,A2=1.023;
+  const xdd=mo.reduce((a,b)=>a+b,0)/J;
+  const lev=new Set(Rall.map(v=>+v.toFixed(6))).size;
+  // média e amplitude
+  const s=mult/5.15,K1=3.05*s,K2=2.70*s,K3=1.62*s;
+  const VE=Rbar*K1,Xdif=Math.max(...mo)-Math.min(...mo);
+  const VA=Math.sqrt(Math.max(0,(Xdif*K2)**2-VE**2/(I*K)));
+  const RRm=Math.sqrt(VE**2+VA**2);
+  const Rp=Math.max(...mp)-Math.min(...mp),VP=Rp*K3,VT=Math.sqrt(RRm**2+VP**2);
+  const M={Rbar,K1,K2,K3,VE,Xdif,VA,RR:RRm,Rp,VP,VT,pVE:100*VE/VT,pVA:100*VA/VT,pRR:100*RRm/VT,pVP:100*VP/VT,ndc:Math.floor(VP/RRm*1.41),UCLR:D4*Rbar,UCLX:xdd+A2*Rbar,LCLX:xdd-A2*Rbar,xdd};
+  return {X,TOL,mult,g,mp,mo,mc,R,Rbar,Rop,D4,A2,UCLR:D4*Rbar,xdd,UCLX:xdd+A2*Rbar,LCLX:xdd-A2*Rbar,lev,
+    anova:{SSP,SSO,SSPO,SSE,dfP,dfO,dfPO,dfE,dfT,SST:SSP+SSO+SSPO+SSE,MQP,MQA,MQAP,MQR,FP,FO,FPO,pP,pO,pPO},C,ndc,M};
+}
+
+/* ---------- resultados ---------- */
+let RES=null;
+function badge(v,lo,hi){return v<=lo?['ok','Aceitável']:v<=hi?['warn','Marginal']:['bad','Inaceitável']}
+function renderRes(r){
+  const C=r.C,a=r.anova;
+  const [c1,t1]=badge(C.rr.pvar,10,30);
+  const nd=r.ndc>=5?['ok','Adequado']:r.ndc>2?['warn','Marginal']:['bad','Inadequado'];
+  const [c3,t3]=badge(C.rr.ptol,10,30);
+  $('#kpis').innerHTML=`
+    <div class="kpi ${c1}"><small>%R&amp;R · variação do estudo</small><div class="v">${fmt(C.rr.pvar,1)}%</div><span class="b">${t1}</span></div>
+    <div class="kpi ${nd[0]}"><small>ndc · categorias distintas</small><div class="v">${r.ndc===Infinity?'∞':r.ndc}</div><span class="b">${nd[1]}</span></div>
+    <div class="kpi ${c3}"><small>%R&amp;R · tolerância</small><div class="v">${fmt(C.rr.ptol,1)}%</div><span class="b">${t3}</span></div>
+    <div class="kpi"><small>%Contribuição do R&amp;R</small><div class="v">${fmt(C.rr.cont,1)}%</div><span class="b" style="background:var(--muted)">variâncias</span></div>`;
+  const row=(n,df,ss,ms,F,p)=>`<tr><td>${n}</td><td>${df}</td><td>${fmt(ss,1)}</td><td>${fmt(ms,2)}</td><td>${F==null?'':fmt(F,2)}</td><td>${p==null?'':(p<0.001?'&lt;0,001':fmt(p,3))}</td></tr>`;
+  $('#tanova').innerHTML=`<tr><th>Fonte</th><th>GL</th><th>SQ (µm²)</th><th>MQ</th><th>F</th><th>p</th></tr>`+
+    row('Peça',a.dfP,a.SSP,a.MQP,a.FP,a.pP)+row('Operador',a.dfO,a.SSO,a.MQA,a.FO,a.pO)+row('Peça × Operador',a.dfPO,a.SSPO,a.MQAP,a.FPO,a.pPO)+row('Repetitividade (resíduo)',a.dfE,a.SSE,a.MQR,null,null)+
+    `<tr class="tot"><td>Total</td><td>${a.dfT}</td><td>${fmt(a.SST,1)}</td><td></td><td></td><td></td></tr>`;
+  $('#pnote').innerHTML=`F de Peça e de Operador usam o MQ da interação como denominador; F da interação usa o MQ do resíduo. Se p da interação for alto (acima de 0,25 pelo AIAG), a interação pode ser incorporada ao erro.`;
+  const rs=(n,c,cls)=>`<tr class="${cls||''}"><td>${n}</td><td>${fmt(c.v,3)}</td><td>${fmt(c.cont,1)}</td><td>${fmt(c.sd,3)}</td><td>${fmt(c.var,3)}</td><td>${fmt(c.pvar,1)}</td><td>${fmt(c.ptol,1)}</td></tr>`;
+  $('#tcomp').innerHTML=`<tr><th>Fonte de variação</th><th>Variância</th><th>%Contribuição</th><th>σ</th><th>Variação do estudo (${fmt(r.mult,2)}σ)</th><th>%Var. estudo</th><th>%Tolerância</th></tr>`+
+    rs('R&R — repetitividade e reprodutibilidade',C.rr,'hi')+rs('&nbsp;&nbsp;VE — repetitividade (equipamento)',C.ve)+rs('&nbsp;&nbsp;VA — reprodutibilidade (avaliadores)',C.va)+rs('&nbsp;&nbsp;VAP — interação peça × operador',C.vap)+rs('VP — variação peça a peça',C.vp)+rs('VT — variação total',C.vt,'tot');
+  const resTol=(+$('#resol').value.replace(',','.'))*1000/r.TOL*100; const rule=resTol<=10;
+  const rn=r.lev;
+  $('#verif').innerHTML=`
+    <h3>Regra dos 10 (resolução × tolerância)</h3>
+    <p style="margin:0 0 10px">Resolução = <b>${fmt(resTol,1)}%</b> da tolerância. Limite: 10%. <b style="color:${rule?'var(--ok)':'var(--bad)'}">${rule?'Atende':'Não atende'}</b>.</p>
+    <h3>Níveis distintos na carta R</h3>
+    <p style="margin:0 0 10px">As 30 amplitudes assumem <b>${rn}</b> valor(es) distinto(s). Com 3 ou menos, a resolução costuma ser inadequada.</p>
+    <h3>Pontos fora do limite na carta R</h3>
+    <p style="margin:0 0 10px">${r.R.flat().filter(v=>v>r.UCLR).length} de 30 amplitudes acima do UCL (${fmt(r.UCLR,2)} µm).</p>
+    <h3>Pontos fora dos limites na carta X̄</h3>
+    <p style="margin:0">${r.mc.flat().filter(v=>v>r.UCLX||v<r.LCLX).length} de 30 médias fora dos limites.</p>`;
+  const M=r.M,mr=(n,v,u)=>`<tr><td>${n}</td><td>${v}</td><td style="text-align:left;font-family:inherit;color:var(--muted)">${u||''}</td></tr>`;
+  $('#tmet').innerHTML=`<tr><th>Grandeza</th><th>Valor</th><th style="text-align:left">Observação</th></tr>`+
+    mr('R̄ — amplitude média das 30 amplitudes',fmt(M.Rbar,3)+' µm')+
+    mr('VE — variação do equipamento (repetitividade) = R̄ × K1',fmt(M.VE,3)+' µm','K1 = '+fmt(M.K1,3))+
+    mr('Xdif = Xmaior − Xmenor (médias dos operadores)',fmt(M.Xdif,3)+' µm')+
+    mr('VA — variação dos avaliadores (reprodutibilidade) = √[(Xdif × K2)² − VE²/(n·r)]',fmt(M.VA,3)+' µm','K2 = '+fmt(M.K2,3)+'; n = 10 peças; r = 3 repetições')+
+    mr('R&R — repetitividade e reprodutibilidade = √(VE² + VA²)',fmt(M.RR,3)+' µm')+
+    mr('Rp — amplitude das médias das peças',fmt(M.Rp,3)+' µm')+
+    mr('VP — variação das peças = Rp × K3',fmt(M.VP,3)+' µm','K3 = '+fmt(M.K3,3))+
+    mr('VT — variação total = √(R&R² + VP²)',fmt(M.VT,3)+' µm')+
+    mr('%VE = VE / VT',fmt(M.pVE,1)+'%')+mr('%VA = VA / VT',fmt(M.pVA,1)+'%')+
+    mr('%R&R = R&R / VT',fmt(M.pRR,1)+'%','ANOVA: '+fmt(C.rr.pvar,1)+'%')+mr('%VP = VP / VT',fmt(M.pVP,1)+'%')+
+    mr('ndc = 1,41 × VP / R&R',M.ndc,'ANOVA: '+(r.ndc===Infinity?'∞':r.ndc))+
+    mr('LSC da carta R = D4 × R̄',fmt(M.UCLR,3)+' µm','D4 = 2,574')+
+    mr('Limites da carta X̄ = X̿ ± A2 × R̄',fmt(M.LCLX,3)+' a '+fmt(M.UCLX,3)+' µm','A2 = 1,023');
+}
+
+/* ---------- gráficos (SVG) ---------- */
+function nice(min,max,n=5){const span=max-min||1;const raw=span/n;const p=Math.pow(10,Math.floor(Math.log10(raw)));const f=raw/p;const st=(f<1.5?1:f<3?2:f<7?5:10)*p;const a=Math.floor(min/st)*st,b=Math.ceil(max/st)*st;const t=[];for(let v=a;v<=b+st/2;v+=st)t.push(+v.toFixed(10));return t}
+function frame(W,H,m,xl,yl,ticks,ylab,xlab){
+  const x0=m.l,x1=W-m.r,y0=H-m.b,y1=m.t,lo=ticks[0],hi=ticks[ticks.length-1];
+  const Y=v=>y0-(v-lo)/(hi-lo)*(y0-y1);
+  let s=`<rect x="${x0}" y="${y1}" width="${x1-x0}" height="${y0-y1}" fill="#fff" stroke="#8a99a8"/>`;
+  ticks.forEach(t=>{const y=Y(t);s+=`<line x1="${x0}" x2="${x1}" y1="${y}" y2="${y}" stroke="#e5ebf1"/><text x="${x0-6}" y="${y+4}" text-anchor="end" font-size="11" fill="#333">${ylab(t)}</text>`});
+  return {s,Y,x0,x1,y0,y1};
+}
+function ch(title,cap,svg,legend){return `<div class="chart"><h3>${title}</h3>${svg}${legend||''}<div class="cap">${cap}</div></div>`}
+function chComp(r){
+  const W=560,H=300,m={l:46,r:10,t:12,b:64};const f=frame(W,H,m,0,0,[0,25,50,75,100],t=>t);
+  let s=f.s;const G=[['R&R',r.C.rr],['Repetitiv.',r.C.ve],['Reprodut.',r.C.va],['Interação',r.C.vap],['Peça a peça',r.C.vp]];
+  const gw=(f.x1-f.x0)/G.length,cols=['#5B8DEF','#C0504D','#F2C300'];
+  G.forEach((g,gi)=>{const v=[g[1].cont,g[1].pvar,g[1].ptol];const bw=gw/4;
+    v.forEach((q,k)=>{const q2=Math.min(q,100);const x=f.x0+gi*gw+bw*0.5+k*bw,y=f.Y(q2);s+=`<rect x="${x}" y="${y}" width="${bw*0.92}" height="${f.y0-y}" fill="${cols[k]}" stroke="#555" stroke-width=".6"/><text x="${x+bw*0.46}" y="${y-3}" text-anchor="middle" font-size="9.5" fill="#222">${q>=1?Math.round(q):fmt(q,1)}</text>`});
+    s+=`<text x="${f.x0+gi*gw+gw/2}" y="${f.y0+16}" text-anchor="middle" font-size="12">${g[0]}</text>`});
+  s+=`<text x="12" y="${(f.y0+f.y1)/2}" font-size="12" transform="rotate(-90 12 ${(f.y0+f.y1)/2})" text-anchor="middle">Percentual</text>`;
+  const lg=`<div class="legend"><span><i style="background:${cols[0]}"></i>% Contribuição</span><span><i style="background:${cols[1]}"></i>% Var. do estudo</span><span><i style="background:${cols[2]}"></i>% Tolerância</span></div>`;
+  return ch('Componentes da variação','Em um bom SM, as maiores barras estão em “Peça a Peça”. Barras altas em outro grupo apontam a fonte do problema.',`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`,lg);
+}
+function chart30(title,cap,vals,lines,r,opts){ // série de 30 pontos (3 operadores × 10 peças)
+  const W=560,H=300,m={l:58,r:70,t:20,b:44};
+  const all=vals.concat(lines.map(l=>l.v));let lo=Math.min(...all),hi=Math.max(...all);const pad=(hi-lo)*0.12||1;
+  const ticks=nice(opts_lo(opts,lo-pad),hi+pad,5);const f=frame(W,H,m,0,0,ticks,t=>fmt(t,opts.dec));
+  let s=f.s;const dx=(f.x1-f.x0)/30;
+  for(let j=0;j<3;j++){ if(j>0)s+=`<line x1="${f.x0+j*10*dx}" x2="${f.x0+j*10*dx}" y1="${f.y1}" y2="${f.y0}" stroke="#8e44ad" stroke-dasharray="6 4"/>`;
+    s+=`<text x="${f.x0+j*10*dx+5*dx}" y="${f.y1-6}" text-anchor="middle" font-size="12" font-weight="700" fill="${OPC[j]}">Operador ${j+1}</text>`;
+    for(let i=0;i<10;i++){ if(i%1===0)s+=`<text x="${f.x0+(j*10+i+.5)*dx}" y="${f.y0+14}" text-anchor="middle" font-size="9.5" fill="#444">${i+1}</text>`}}
+  const ord=lines.map((l,ix)=>({l,y:f.Y(l.v),ly:f.Y(l.v)})).sort((p,q)=>p.y-q.y);
+  ord.forEach((o,ix)=>{if(ix>0&&o.ly-ord[ix-1].ly<12)o.ly=ord[ix-1].ly+12});
+  ord.forEach(o=>{s+=`<line x1="${f.x0}" x2="${f.x1}" y1="${o.y}" y2="${o.y}" stroke="${o.l.c}" stroke-width="1.6"/><text x="${f.x1+4}" y="${o.ly+4}" font-size="10.5" fill="${o.l.c}">${o.l.t}</text>`});
+  for(let j=0;j<3;j++){let p='';for(let i=0;i<10;i++){const x=f.x0+(j*10+i+.5)*dx,y=f.Y(vals[j*10+i]);p+=(i?'L':'M')+x+' '+y+' '}
+    s+=`<path d="${p}" fill="none" stroke="#1F5FA8" stroke-width="1.3"/>`;
+    for(let i=0;i<10;i++){const v=vals[j*10+i];const x=f.x0+(j*10+i+.5)*dx,y=f.Y(v);const out=opts.out(v);s+=out?`<text x="${x}" y="${y+4}" text-anchor="middle" font-size="15" fill="#C0392B" font-weight="700">✱</text>`:`<circle cx="${x}" cy="${y}" r="3.3" fill="#1F5FA8"/>`}}
+  s+=`<text x="${(f.x0+f.x1)/2}" y="${H-8}" text-anchor="middle" font-size="12">Peça</text><text x="13" y="${(f.y0+f.y1)/2}" font-size="12" transform="rotate(-90 13 ${(f.y0+f.y1)/2})" text-anchor="middle">${opts.yl}</text>`;
+  return ch(title,cap,`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`);
+}
+function opts_lo(o,v){return o.zero?0:v}
+let opts;
+function chR(r){const vals=[0,1,2].flatMap(j=>r.R.map(x=>x[j]/1000));opts={dec:3,yl:'Amplitude (mm)',zero:true,out:v=>v>r.UCLR/1000};
+  return chart30('Carta R por operador','Cada ponto é a amplitude das 3 repetições de uma peça. Ponto acima do UCL (✱): operador inconsistente naquela peça. Poucos níveis distintos indicam resolução inadequada.',vals,[{v:r.UCLR/1000,c:'#A93226',t:'UCL'},{v:r.Rbar/1000,c:'#1E8E5A',t:'R̄'},{v:0,c:'#A93226',t:'LIC=0'}],r,opts)}
+function chX(r){const vals=[0,1,2].flatMap(j=>r.mc.map(x=>x[j]/1000));opts={dec:3,yl:'Média (mm)',zero:false,out:v=>v>r.UCLX/1000||v<r.LCLX/1000};
+  return chart30('Carta X̄ por operador','Cada ponto é a média das 3 repetições. Aqui se deseja muitos pontos FORA dos limites (✱): as peças diferem mais entre si do que o ruído do SM.',vals,[{v:r.UCLX/1000,c:'#A93226',t:'UCL'},{v:r.xdd/1000,c:'#1E8E5A',t:'X̿'},{v:r.LCLX/1000,c:'#A93226',t:'LIC'}],r,opts)}
+function chPeca(r){
+  const W=560,H=300,m={l:58,r:12,t:14,b:40};const all=r.X.flat(2).map(v=>v/1000);let lo=Math.min(...all),hi=Math.max(...all);const pad=(hi-lo)*0.08||.001;
+  const ticks=nice(lo-pad,hi+pad,5);const f=frame(W,H,m,0,0,ticks,t=>fmt(t,3));let s=f.s;const dx=(f.x1-f.x0)/I;
+  let p='';
+  for(let i=0;i<I;i++){const cx=f.x0+(i+.5)*dx;s+=`<text x="${cx}" y="${f.y0+14}" text-anchor="middle" font-size="11">${i+1}</text>`;
+    for(let j=0;j<J;j++)for(let k=0;k<K;k++){const v=r.X[i][j][k]/1000;s+=`<circle cx="${cx+(j-1)*5}" cy="${f.Y(v)}" r="2.8" fill="none" stroke="${OPC[j]}" stroke-width="1.2"/>`}
+    const mv=r.mp[i]/1000;p+=(i?'L':'M')+cx+' '+f.Y(mv)+' '}
+  s+=`<path d="${p}" fill="none" stroke="#222" stroke-width="1.4"/>`;
+  for(let i=0;i<I;i++){s+=`<circle cx="${f.x0+(i+.5)*dx}" cy="${f.Y(r.mp[i]/1000)}" r="3.6" fill="#222"/>`}
+  s+=`<text x="${(f.x0+f.x1)/2}" y="${H-8}" text-anchor="middle" font-size="12">Peça</text><text x="13" y="${(f.y0+f.y1)/2}" font-size="12" transform="rotate(-90 13 ${(f.y0+f.y1)/2})" text-anchor="middle">Medida (mm)</text>`;
+  const lg=`<div class="legend"><span><i style="background:none;border:2px solid ${OPC[0]};border-radius:50%"></i>Operador 1</span><span><i style="background:none;border:2px solid ${OPC[1]};border-radius:50%"></i>Operador 2</span><span><i style="background:none;border:2px solid ${OPC[2]};border-radius:50%"></i>Operador 3</span><span><i style="background:#222;border-radius:50%"></i>Média da peça</span></div>`;
+  return ch('Medições por peça','Círculos vazios: cada medição. Preenchidos: média da peça. Ideal: círculos de uma mesma peça bem juntos e médias bem diferentes entre peças.',`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`,lg);
+}
+function quant(a,q){const b=[...a].sort((x,y)=>x-y);const p=(b.length-1)*q,lo=Math.floor(p),hi=Math.ceil(p);return b[lo]+(b[hi]-b[lo])*(p-lo)}
+function chBox(r){
+  const W=560,H=300,m={l:58,r:12,t:14,b:40};
+  const data=[0,1,2].map(j=>{const v=[];for(let i=0;i<I;i++)for(let k=0;k<K;k++)v.push(r.X[i][j][k]/1000);return v});
+  const all=data.flat();let lo=Math.min(...all),hi=Math.max(...all);const pad=(hi-lo)*0.08||.001;const ticks=nice(lo-pad,hi+pad,5);
+  const f=frame(W,H,m,0,0,ticks,t=>fmt(t,3));let s=f.s;const dx=(f.x1-f.x0)/3;let mp='';
+  data.forEach((v,j)=>{const q1=quant(v,.25),q2=quant(v,.5),q3=quant(v,.75),iq=q3-q1;const lw=Math.min(...v.filter(x=>x>=q1-1.5*iq)),hw=Math.max(...v.filter(x=>x<=q3+1.5*iq));
+    const cx=f.x0+(j+.5)*dx,bw=dx*0.3,mean=v.reduce((a,b)=>a+b,0)/v.length;
+    s+=`<line x1="${cx}" x2="${cx}" y1="${f.Y(hw)}" y2="${f.Y(lw)}" stroke="#333"/><line x1="${cx-bw/4}" x2="${cx+bw/4}" y1="${f.Y(hw)}" y2="${f.Y(hw)}" stroke="#333"/><line x1="${cx-bw/4}" x2="${cx+bw/4}" y1="${f.Y(lw)}" y2="${f.Y(lw)}" stroke="#333"/>`;
+    s+=`<rect x="${cx-bw/2}" y="${f.Y(q3)}" width="${bw}" height="${Math.max(1,f.Y(q1)-f.Y(q3))}" fill="#7BA7D9" stroke="#333"/><line x1="${cx-bw/2}" x2="${cx+bw/2}" y1="${f.Y(q2)}" y2="${f.Y(q2)}" stroke="#222" stroke-width="2"/>`;
+    s+=`<circle cx="${cx}" cy="${f.Y(mean)}" r="4.5" fill="none" stroke="#222"/><path d="M${cx-4.5} ${f.Y(mean)}H${cx+4.5}M${cx} ${f.Y(mean)-4.5}V${f.Y(mean)+4.5}" stroke="#222"/>`;
+    v.filter(x=>x<lw||x>hw).forEach(x=>{s+=`<text x="${cx}" y="${f.Y(x)+5}" text-anchor="middle" font-size="14" fill="#222">✱</text>`});
+    s+=`<text x="${cx}" y="${f.y0+16}" text-anchor="middle" font-size="12" font-weight="700" fill="${OPC[j]}">Operador ${j+1}</text>`;mp+=(j?'L':'M')+cx+' '+f.Y(mean)+' '});
+  s+=`<path d="${mp}" fill="none" stroke="#555" stroke-width="1"/>`;
+  s+=`<text x="13" y="${(f.y0+f.y1)/2}" font-size="12" transform="rotate(-90 13 ${(f.y0+f.y1)/2})" text-anchor="middle">Medida (mm)</text>`;
+  return ch('Boxplot por operador','Caixa: Q1–Q3; traço: mediana; ⊕: média; ✱: valor atípico. Operadores semelhantes têm caixas na mesma altura e do mesmo tamanho.',`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`);
+}
+function chInt(r){
+  const W=560,H=300,m={l:58,r:12,t:14,b:40};const all=r.mc.flat().map(v=>v/1000);let lo=Math.min(...all),hi=Math.max(...all);const pad=(hi-lo)*0.1||.001;
+  const ticks=nice(lo-pad,hi+pad,5);const f=frame(W,H,m,0,0,ticks,t=>fmt(t,3));let s=f.s;const dx=(f.x1-f.x0)/I;
+  for(let i=0;i<I;i++)s+=`<text x="${f.x0+(i+.5)*dx}" y="${f.y0+14}" text-anchor="middle" font-size="11">${i+1}</text>`;
+  for(let j=0;j<J;j++){let p='';for(let i=0;i<I;i++)p+=(i?'L':'M')+(f.x0+(i+.5)*dx)+' '+f.Y(r.mc[i][j]/1000)+' ';s+=`<path d="${p}" fill="none" stroke="${OPC[j]}" stroke-width="1.6"/>`;for(let i=0;i<I;i++)s+=`<circle cx="${f.x0+(i+.5)*dx}" cy="${f.Y(r.mc[i][j]/1000)}" r="3.3" fill="${OPC[j]}"/>`}
+  s+=`<text x="${(f.x0+f.x1)/2}" y="${H-8}" text-anchor="middle" font-size="12">Peça</text><text x="13" y="${(f.y0+f.y1)/2}" font-size="12" transform="rotate(-90 13 ${(f.y0+f.y1)/2})" text-anchor="middle">Média (mm)</text>`;
+  const lg=`<div class="legend">${[0,1,2].map(j=>`<span><i style="background:${OPC[j]}"></i>Operador ${j+1}</span>`).join('')}</div>`;
+  return ch('Interação peça × operador','Cada linha liga as médias de um operador em cada peça. Linhas sobrepostas ou paralelas: sem interação. Linhas que se cruzam: o operador mede certas peças de modo diferente.',`<svg viewBox="0 0 ${W} ${H}">${s}</svg>`,lg);
+}
+function renderCharts(r){$('#charts').innerHTML=chComp(r)+chR(r)+chX(r)+chPeca(r)+chBox(r)+chInt(r)}
+
+/* ---------- controle ---------- */
+function show(t){document.querySelectorAll('section').forEach(s=>s.classList.toggle('on',s.id==='sec-'+t));document.querySelectorAll('nav button').forEach(b=>b.classList.toggle('on',b.dataset.t===t));window.scrollTo(0,0)}
+function runAnalysis(){
+  const tol=parse($('#tol').value),res=parse($('#resol').value);
+  if(!(tol>0)){$('#msgdados').textContent='Informe a tolerância da peça (mm).';return}
+  if(!(res>0)){$('#msgdados').textContent='Informe a resolução do instrumento (mm).';return}
+  RES=analyze(readX(),tol,parseFloat($('#mult').value));
+  renderRes(RES);renderCharts(RES);
+  document.querySelectorAll('nav button').forEach(b=>b.disabled=false);show('res');
+}
+document.addEventListener('DOMContentLoaded',()=>{
+  buildGrid();restore();refresh();
+  $('#grid').addEventListener('input',refresh);
+  $('#grid').addEventListener('keydown',e=>{if(e.key==='Enter'){e.preventDefault();const a=inputs(),i=a.indexOf(e.target);if(a[i+1])a[i+1].focus()}});
+  ['trio','nomes','tol','resol','mult'].forEach(id=>$('#'+id).addEventListener('input',save));
+  $('#analisar').addEventListener('click',runAnalysis);
+  $('#limpar').addEventListener('click',()=>{if(confirm('Apagar todos os valores digitados?')){inputs().forEach(e=>e.value='');refresh()}});
+  document.querySelectorAll('nav button').forEach(b=>b.addEventListener('click',()=>{if(!b.disabled)show(b.dataset.t)}));
+  $('#profl').addEventListener('click',()=>{$('#modal').classList.add('on');$('#m1').style.display='';$('#m2').style.display='none';$('#pin').value='';$('#pinerr').textContent='';$('#pin').focus()});
+  const sel=$('#selt');for(let t=1;t<=9;t++)sel.innerHTML+=`<option value="${t}">Trio ${t}</option>`;
+  const close=()=>$('#modal').classList.remove('on');$('#pinx').addEventListener('click',close);$('#loadx').addEventListener('click',close);
+  const tryPin=()=>{if($('#pin').value===PIN){$('#m1').style.display='none';$('#m2').style.display=''}else $('#pinerr').textContent='Senha incorreta.'};
+  $('#pinok').addEventListener('click',tryPin);$('#pin').addEventListener('keydown',e=>{if(e.key==='Enter')tryPin()});
+  $('#loadt').addEventListener('click',()=>{const t=sel.value,d=DATA[t];if(!d)return;const dec=d.res>=0.01?2:3;
+    const e=inputs();let n=0;for(let i=0;i<I;i++)for(let j=0;j<J;j++)for(let k=0;k<K;k++)e[n++].value=((20000+d.X[i][j][k])/1000).toFixed(dec).replace('.',',');
+    $('#trio').value=t;$('#tol').value='0,052';$('#resol').value=d.res>=0.01?'0,02':'0,001';refresh();close()});
+});
+</script>
+</body>
+</html>
